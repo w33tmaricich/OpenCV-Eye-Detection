@@ -1,0 +1,8 @@
+# any stupid files
+*~
+.DS_Store
+
+# ignore test builds
+src/test
+src/makefile
+build/test.sh
