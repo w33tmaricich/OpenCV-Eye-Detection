@@ -19,7 +19,7 @@ If this fails, you may have ffmpeg installed which tends to conflict. If so, try
 brew install opencv --env=std
 ```
 
-After all that is installed, a simple GCC should do the trick!
+After all that is installed, running make should do the trick! Check out my attached makefile for more information on including OpenCV while compiling with clang.
 
 If you are compiling on windows, good luck. Ill update this readme at a later time on the easiest way to get it compiled in Visual Studio. 
 

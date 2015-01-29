@@ -4,5 +4,4 @@
 
 # ignore test builds
 src/test
-src/makefile
 build/test.sh
