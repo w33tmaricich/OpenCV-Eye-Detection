@@ -34,6 +34,7 @@
  */
 #include <opencv2/opencv.hpp>
 
+// This was an attempt to make things universal. Maybe i should come back to this later $$$
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #include "StdAfx.h"
 #endif
@@ -63,6 +64,12 @@ void help() {
 		 << "    --help\t\tDisplay this help menu" << endl
 		 << endl << "The MIT License (MIT) :: Copyright (c) 2014 Alexander Maricich" << endl;
 }
+
+/**
+ * exists - Checks the file system to see if the ile exists.
+ * @param  name String path to the file
+ * @return      Completion: True or False
+ */
 bool exists (const std::string& name) {
     if (FILE *file = fopen(name.c_str(), "r")) {
         fclose(file);
@@ -70,6 +77,10 @@ bool exists (const std::string& name) {
     } else {
         return false;
     }   
+}
+
+char* findEyeCenters () {
+	// prototype
 }
 /**
  * main - where the application launches at startup
