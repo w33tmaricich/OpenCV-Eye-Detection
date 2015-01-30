@@ -79,9 +79,41 @@ bool exists (const std::string& name) {
     }   
 }
 
-char* findEyeCenters () {
-	// prototype
+bool parseParameters(int argc, char const *argv[], int showImage, int imgFound, int flagsFound, int multiImage, string imgPath, string outputPath) {
+	// loop through the input to see what needs to be done
+	for (int i = 1; i < argc; i++) {
+		if (strcmp(argv[1], "--help") == 0) {
+			help();
+			// cout << "Help called" << endl;
+			exit(1);
+			return false;
+		}
+		// change the display flag so it will be run.
+		else if (strcmp(argv[i], "--display") == 0 || strcmp(argv[i], "-d") == 0) {
+			showImage = 1;
+			flagsFound++;
+			//cout << "Display enabled: showImage=" << showImage << endl;
+		}
+		else if (strcmp(argv[i], "--file") == 0 || strcmp(argv[i], "-f") == 0) {
+			imgPath = argv[i+1];
+			imgFound++;
+			flagsFound++;
+			//cout << "Passing one file: imgPath=" << imgPath << " imgFound=" << imgFound << endl;
+		}
+		else if (strcmp(argv[i], "--output") == 0 || strcmp(argv[i], "-o") == 0) {
+			outputPath = argv[i+1];
+			flagsFound++;
+			//cout << "Changing output file: outputPath=" << outputPath << endl;
+		}
+		else if (strcmp(argv[i], "--multi-image") == 0) {
+			multiImage = i+1;
+		}
+		//cout << "flagsFound=" << flagsFound << endl;
+	}
+	return true;
 }
+
+
 /**
  * main - where the application launches at startup
  * @param  argc the total number of arguments
@@ -122,21 +154,6 @@ int main(int argc, char const *argv[])
 	string xmlPairBig = "haarcascade_mcs_eyepair_big.xml";
 	string outputString = "";
 
-
-// string imgPath;
-// 	char* fileName = "\\XLoupeEyesOut.txt";
-// 	char* tempPath = getenv("Temp");
-// 	int outputPathCharLength = (int)strlen(tempPath) + (int)strlen(fileName)+1;
-// 	char* outputPathChar = (char*)malloc(strlen(tempPath)+strlen(fileName)+1);
-// 	strcpy(outputPathChar, tempPath);
-// 	strcat(outputPathChar, fileName);
-// 	string outputPath = string(outputPathChar);
-// 	string xmlLeft = "haarcascade_mcs_lefteye.xml";
-// 	string xmlRight = "haarcascade_mcs_righteye.xml";
-// 	string xmlPairSmall = "haarcascade_mcs_eyepair_small.xml";
-// 	string xmlPairBig = "haarcascade_mcs_eyepair_big.xml";
-// 	string outputString = "";
-
 	// Output file
 	ofstream outputFile;
 	bool fileExists;
@@ -168,39 +185,13 @@ int main(int argc, char const *argv[])
 	int imgFound = 0;
 	int flagsFound = 0;
 	int multiImage = 0;
-
-
 	// END var declarations
 
-
-	// loop through the input to see what needs to be done
-	for (int i = 1; i < argc; i++) {
-		if (strcmp(argv[1], "--help") == 0) {
-			help();
-			// cout << "Help called" << endl;
-			exit(1);
-		}
-		// change the display flag so it will be run.
-		else if (strcmp(argv[i], "--display") == 0 || strcmp(argv[i], "-d") == 0) {
-			showImage = 1;
-			flagsFound++;
-			//cout << "Display enabled: showImage=" << showImage << endl;
-		}
-		else if (strcmp(argv[i], "--file") == 0 || strcmp(argv[i], "-f") == 0) {
-			imgPath = argv[i+1];
-			imgFound++;
-			flagsFound++;
-			//cout << "Passing one file: imgPath=" << imgPath << " imgFound=" << imgFound << endl;
-		}
-		else if (strcmp(argv[i], "--output") == 0 || strcmp(argv[i], "-o") == 0) {
-			outputPath = argv[i+1];
-			flagsFound++;
-			//cout << "Changing output file: outputPath=" << outputPath << endl;
-		}
-		else if (strcmp(argv[i], "--multi-image") == 0) {
-			multiImage = i+1;
-		}
-		//cout << "flagsFound=" << flagsFound << endl;
+	// parse the parameters and make sure they were entered properly
+	bool hasCorrectInput = parseParameters(argc, argv, showImage, imgFound, flagsFound, multiImage, imgPath, outputPath);
+	
+	if (hasCorrectInput) {
+		
 	}
 
 	if (!multiImage) {
