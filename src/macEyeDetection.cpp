@@ -146,7 +146,7 @@ bool exists (const std::string& name) {
  * @param  outputPath Path to the file that data will be written to.
  * @return            bool on correct termination.
  */
-bool parseParameters(int argc, char const *argv[], int showImage, int imgFound, int flagsFound, int multiImage, string imgPath, string outputPath) {
+bool parseParameters(int argc, char const *argv[]) {
 	// loop through the input to see what needs to be done
 	for (int i = 1; i < argc; i++) {
 		if (strcmp(argv[1], "--help") == 0) {
@@ -473,7 +473,7 @@ int main(int argc, char const *argv[])
 	// END var declarations
 
 	// parse the parameters and make sure they were entered properly
-	bool hasCorrectInput = parseParameters(argc, argv, showImage, imgFound, flagsFound, multiImage, imgPath, outputPath);
+	bool hasCorrectInput = parseParameters(argc, argv);
 	
 	if (hasCorrectInput) {
 		if (!multiImage) {
