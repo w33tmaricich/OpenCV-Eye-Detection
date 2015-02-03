@@ -2,7 +2,7 @@ CFLAGS = `pkg-config --cflags opencv`
 LIBS = `pkg-config --libs opencv`
 
 test: macEyeDetection.cpp
-	g++ -v $(CFLAGS) $(LIBS) -o test macEyeDetection.cpp
+	g++ $(CFLAGS) $(LIBS) -o test macEyeDetection.cpp
 # CFLAGS = `pkg-config --cflags opencv`
 # LIBS = `pkg-config --libs opencv`
 
