@@ -1,1 +1,1 @@
-../../src/test lucia3.jpeg
+../../src/test -o testOutputFile.txt --multi-image lucia3.jpeg lucia3.jpeg
