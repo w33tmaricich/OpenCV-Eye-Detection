@@ -47,6 +47,7 @@
 using namespace std;
 using namespace cv;
 
+// image matrixes of bits
 Mat img;
 Mat imgCopy;
 

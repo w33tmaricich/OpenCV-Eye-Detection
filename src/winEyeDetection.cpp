@@ -33,7 +33,6 @@
 	x_value\ty_value\tpoint_name\n	<-- example  145[tab]161[tab]Right Eye[cr]
  */
 #include "StdAfx.h"
-//#include "stdafx.h"
 #include <opencv2\opencv.hpp>
 
 #include <stdio.h>
@@ -44,6 +43,55 @@
 
 using namespace std;
 using namespace cv;
+
+	// image matrixes of bits
+	Mat img;
+	Mat imgCopy;
+
+	// paths to the files we are using
+	// ENSURE DOUBLE SLASHES FOR WINDOWS
+	string imgPath;
+	char* fileName = "\\XLoupeEyesOut.txt";
+	char* tempPath = getenv("Temp");
+	char* outputPathChar = (char*)malloc(strlen(tempPath)+strlen(fileName)+1);
+	string outputPath = string(outputPathChar);
+	string xmlLeft = "haarcascade_mcs_lefteye.xml";
+	string xmlRight = "haarcascade_mcs_righteye.xml";
+	string xmlPairSmall = "haarcascade_mcs_eyepair_small.xml";
+	string xmlPairBig = "haarcascade_mcs_eyepair_big.xml";
+	string outputString = "";
+
+	// Output file
+	ofstream outputFile;
+	bool fileExists;
+
+	// string converter
+	ostringstream convert;
+
+	// classifier objects to find matches
+	CascadeClassifier haar_left;
+	CascadeClassifier haar_right;
+	CascadeClassifier haar_pair;
+
+	// vectors that hold the matches we find
+	vector< Rect_<int> > lefts;
+	vector< Rect_<int> > rights;
+	vector< Rect_<int> > pairs;
+
+	int maxint = numeric_limits<int>::max();
+
+	// index number of above vectors that we will be using
+	int leftNumber = maxint;
+	int rightNumber = maxint;
+	int pairNumber = maxint;
+	int pointCount = 0;
+
+	// If 1, we will display the output to the screen in a graphical form
+	int eyePairsFound = 0;
+	int showImage = 0;
+	int imgFound = 0;
+	int flagsFound = 0;
+	int multiImage = 0;
 
 
 #define CV_RGB( r, g, b )  (int)((uchar)(b) + ((uchar)(g) << 8) + ((uchar)(r) << 16))
@@ -69,81 +117,27 @@ bool exists (const std::string& name) {
         return false;
     }   
 }
+
 /**
- * main - where the application launches at startup
- * @param  argc the total number of arguments
- * @param  argv each argument passed in as a string
- * @return      0 on successful completion
+ * parseParameters - Make some sense out of what the user passes in.
+ * @param  argc       Number of arguments passed.
+ * @param  argv       Arguments in an array.
+ * @param  showImage  Flag for if a graphical representation of the eye finding should be displayed.
+ * @param  imgFound   Number of images found.
+ * @param  flagsFound Number of flags found.
+ * @param  multiImage Flag for if multiple images are to be processed.
+ * @param  imgPath    Path to one image at any given time.
+ * @param  outputPath Path to the file that data will be written to.
+ * @return            bool on correct termination.
  */
-//int main(int argc, char const *argv[]) {
-int _tmain(int argc, _TCHAR* argv[]) { 
-	/* var declarations */
-	// image matrixes of bits
-	Mat img;
-	Mat imgCopy;
-
-	// paths to the files we are using
-	// ENSURE DOUBLE SLASHES FOR WINDOWS
-	string imgPath;
-	char* fileName = "\\XLoupeEyesOut.txt";
-	char* tempPath = getenv("Temp");
-	char* outputPathChar = (char*)malloc(strlen(tempPath)+strlen(fileName)+1);
-	strcpy(outputPathChar, tempPath);
-	strcat(outputPathChar, fileName);
-	string outputPath = string(outputPathChar);
-	string xmlLeft = "haarcascade_mcs_lefteye.xml";
-	string xmlRight = "haarcascade_mcs_righteye.xml";
-	string xmlPairSmall = "haarcascade_mcs_eyepair_small.xml";
-	string xmlPairBig = "haarcascade_mcs_eyepair_big.xml";
-	string outputString = "";
-
-	// Output file
-	ofstream outputFile;
-	ifstream fileExists;
-
-	// string converter
-	ostringstream convert;
-
-	// classifier objects to find matches
-	CascadeClassifier haar_left;
-	CascadeClassifier haar_right;
-	CascadeClassifier haar_pair;
-
-	// find everything you need
-	haar_left.load(xmlLeft);
-	haar_right.load(xmlRight);
-	haar_pair.load(xmlPairSmall);
-
-	// vectors that hold the matches we find
-	vector< Rect_<int> > lefts;
-	vector< Rect_<int> > rights;
-	vector< Rect_<int> > pairs;
-
-	int maxint = numeric_limits<int>::max();
-
-	// index number of above vectors that we will be using
-	int leftNumber = maxint;
-	int rightNumber = maxint;
-	int pairNumber = maxint;
-	int pointCount = 0;
-
-	// If 1, we will display the output to the screen in a graphical form
-	int eyePairsFound = 0;
-	int showImage = 0;
-	int imgFound = 0;
-	int flagsFound = 0;
-	int multiImage = 0;
-
-
-	// END var declarations
-
-
+bool parseParameters(int argc, _TCHAR *argv[]) {
 	// loop through the input to see what needs to be done
 	for (int i = 1; i < argc; i++) {
 		if (strcmp(argv[1], "--help") == 0) {
 			help();
 			// cout << "Help called" << endl;
 			exit(1);
+			return false;
 		}
 		// change the display flag so it will be run.
 		else if (strcmp(argv[i], "--display") == 0 || strcmp(argv[i], "-d") == 0) {
@@ -167,57 +161,63 @@ int _tmain(int argc, _TCHAR* argv[]) {
 		}
 		//cout << "flagsFound=" << flagsFound << endl;
 	}
+	return true;
+}
 
-	if (!multiImage) {
-		// use the second perameter as the file if nothing else was provided
-		if(!imgFound && argc == 2) {
-			imgFound++;
-			imgPath = argv[1];
-		}
-		
-		// check to see if image input was recieved
-		if (imgFound) {
+void findEyeCenters(int argc, _TCHAR *argv[]) {
 
-			// vectors that hold the matches we find
-	vector< Rect_<int> > lefts;
-	vector< Rect_<int> > rights;
-	vector< Rect_<int> > pairs;
+	// if there is only one image being passed in, we only want to run the loop once
+	if (multiImage == 0 && argc == 2) {
+		multiImage = 1;
+	}
 
+	int processedCounter = 0;
+	cout << "Processing  " << argc - multiImage << " images: \n--------------" << endl;
+	for (int l = multiImage; l < argc; l++) {
+		processedCounter++;
+
+		if (imgFound || multiImage != 0) {
+			imgPath = argv[l];
+			cout << "[" << processedCounter << "] Processing image at path: " << imgPath << endl;
 			// check to see if the image exsists
-			// if (!imgPath.empty()) {				// on mac
-			if (exists(imgPath)) {					// on PC
-				//cout << "exists(imgPath)=" << exists(imgPath) << endl;
+			fileExists = (ifstream(imgPath.c_str()) != 0);
+			cout << "file exists" << endl;
+
+
+			if (fileExists) {
+
 				// read in the image
 				img = imread(imgPath, 0);
 				// clone the image
 				imgCopy = img.clone();
 
-				//cout << "pairs file: " << xmlPairSmall << " " << exists(xmlPairSmall) << endl;
 				// find everything you need
 				haar_left.load(xmlLeft);
 				haar_right.load(xmlRight);
 				haar_pair.load(xmlPairSmall);
 
+				cout << "loaded information" << endl;
 				haar_left.detectMultiScale(imgCopy, lefts);
 				haar_right.detectMultiScale(imgCopy, rights);
 				haar_pair.detectMultiScale(imgCopy, pairs);
-				//cout << "Pairs: " << int(pairs.size()) << endl;
 
-				int usePair;
 				// loop through each pair
+
+				cout << "Performed Haar Cascade" << endl;
 				
 				if (int(pairs.size() != 0)) {
 					eyePairsFound = int(pairs.size());
-					for (int k = 0; k < pairs.size(); k++) {
-						int useLeft;
-						int useRight;
+
+					for (unsigned int k = 0; k < pairs.size(); k++) {
+						int useLeft = -1;
+						int useRight = -1;
 						int small_left_diff = numeric_limits<int>::max();
 						int small_right_diff = numeric_limits<int>::max();
 						Rect pair = pairs[k];
 
 						// find the left eye that matches the closest to the pair
 						if (int(lefts.size() != 0)){
-							for (int i = 0; i < lefts.size(); i++) {
+							for (unsigned int i = 0; i < lefts.size(); i++) {
 								Rect left = lefts[i];
 								int lxdiff;
 								int lydiff;
@@ -245,7 +245,6 @@ int _tmain(int argc, _TCHAR* argv[]) {
 									small_left_diff = ldiff;
 									useLeft = i;
 								}
-		
 							}
 						}
 
@@ -253,15 +252,12 @@ int _tmain(int argc, _TCHAR* argv[]) {
 
 						// find the right eye that matches the closest to the pair
 						if (int(rights.size()) != 0) {
-							for (int j = 0; j < rights.size(); j++) {
+							for (unsigned int j = 0; j < rights.size(); j++) {
 								Rect right = rights[j];
 								int rxdiff;
 								int rydiff;
 								int rdiff;
 								
-								// display findings
-								// cout << "right: "<< right << endl;
-		
 								// find how close the right eye is to the right corner of the pair
 								if((right.x+right.width) > (pair.x+pair.width)) {
 									rxdiff = (right.x+right.width) - (pair.x+pair.width);
@@ -284,31 +280,28 @@ int _tmain(int argc, _TCHAR* argv[]) {
 									small_right_diff = rdiff;
 									useRight = j;
 								}
-		
 							}	
 						}
 
 						rightNumber = useRight;
+
 						// some check to see if this is the closest match $$$
 						pairNumber = k;	
 					}
 				}
-
+				cout << "Found eye pairs" << endl;
 				// only run the output / display code if something can be displayed
 				if (eyePairsFound) {
-
 					// save the pair we are using
 					Rect usedPair = pairs[pairNumber];
 					// create ints for the data we have a potential to pass
-					int left_eye_x_pt, left_eye_y_pt, right_eye_x_pt, right_eye_y_pt, numPoints;
+					int left_eye_x_pt = -1, left_eye_y_pt = -1, right_eye_x_pt = -1, right_eye_y_pt = -1;
 					// create rectangle objects for drawing if needed
 					Rect usedLeft, usedRight;
-					numPoints = 0;
-
 
 					// if a left eye was found
 					if (leftNumber != maxint) {
-						numPoints++;
+						pointCount++;
 						// get the rectangle we are using
 						usedLeft = lefts[leftNumber];
 						// calcualte the x and y coordinates
@@ -316,7 +309,7 @@ int _tmain(int argc, _TCHAR* argv[]) {
 						left_eye_y_pt = usedLeft.y + (usedLeft.height/2);
 					}
 					if (rightNumber != maxint) {
-						numPoints++;
+						pointCount++;
 						usedRight = rights[rightNumber];
 						right_eye_x_pt = (usedRight.x) + (usedRight.width/2);
 						right_eye_y_pt = usedRight.y + (usedRight.height/2);
@@ -353,25 +346,15 @@ int _tmain(int argc, _TCHAR* argv[]) {
 							if(key == 27)
 								break;
 						}
-
-
-
-
 					}
 					// used to convert to string
-					ostringstream convert;
+					
 
 
 					// Put the string together one bit at a time
-					string strNumberOfPoints;
 					string strPoint;
 
-					convert << numPoints;
-					strNumberOfPoints = convert.str();
-					convert.str("");
-					convert.clear();
-
-					//outputString += strNumberOfPoints + "\n";
+					
 
 					// if the left eye is found
 					if (leftNumber != maxint) {
@@ -387,7 +370,6 @@ int _tmain(int argc, _TCHAR* argv[]) {
 
 						convert << left_eye_y_pt;
 						strPoint = convert.str();
-						//outputString += strPoint + "\tLeft Eye\n";
 						outputString += strPoint + "\t";
 						convert.str("");
 						convert.clear();
@@ -402,307 +384,79 @@ int _tmain(int argc, _TCHAR* argv[]) {
 
 						convert << right_eye_y_pt;
 						strPoint = convert.str();
-						//outputString += strPoint + "\tRight Eye\n";
 						outputString += strPoint + "\n";
 						convert.str("");
 						convert.clear();
 					}
-
-					// send what is going to be written to a file to the terminal
-					cout << outputString << ":ok" << endl;
-
-					// write the point information out to a file
-					outputFile.open(outputPath);
-					outputFile << outputString << ":ok" << endl << flush;
+					cout << "Found data, time to store" << endl;
+					outputFile.open(outputPath.c_str());
+					outputFile << outputString;
 					outputFile.close();
-
+					cout << "Stored one data" << endl;
 				}
 				else {
-					cout << "No eye pairs could be found." << endl;
-					outputFile.open(outputPath);
-					outputString = "0\t0\t0\t0\n";
-					outputFile << outputString << ":ok" << endl;
-					outputFile.close();
-					return 0;
+					outputString += "0\t0\t0\t0\n";
 				}
 			}
 			else {
-				cout << "Error: Image does not exsist" << endl;
-				outputFile.open(outputPath);
-				outputString = "0\t0\t0\t0\n";
-				outputFile << outputString << ":ok" << endl;
-				outputFile.close();
-				exit(1);
+				outputString += "0\t0\t0\t0\n";
 			}
 		}
 		else {
 			cout << "Error: No file was passed\n\tPlease insure to pass the data as described below" << endl;
 			help();
 			exit(1);
-		}	
+		}
+	
 	}
-	else {
+	cout << "Get ready to store final data" << endl;
+	// string strNumberOfPoints;
+	string finalString;
+	// convert << pointCount/2;
+	// strNumberOfPoints = convert.str();
+	// convert.str("");
+	// convert.clear();
 
-		// vectors that hold the matches we find
-	vector< Rect_<int> > lefts;
-	vector< Rect_<int> > rights;
-	vector< Rect_<int> > pairs;
+	// outputString += strNumberOfPoints + "\n";
+	// finalString = strNumberOfPoints + "\n" + outputString + ":ok";
+	finalString = outputString + ":ok";
+	// finalString = ":ok";
 
-		imgFound = argc - 2;
-		for (int l = multiImage; l < argc; l++) {
-			if (imgFound) {
-				imgPath = argv[l];
-				// check to see if the image exsists
-				fileExists = ifstream(imgPath);
-				if (fileExists) {
-					// read in the image
-					img = imread(imgPath, 0);
-					// clone the image
-					imgCopy = img.clone();
+	cout << endl << "Output data:\n--------------\n" << finalString << endl << endl;
+	cout << "Outputing data to file: ";
+	outputFile.open(outputPath.c_str());
+	outputFile << finalString;
+	outputFile.close();
+	cout << "Complete." << endl;
+}
 
-					
-
-					haar_left.detectMultiScale(imgCopy, lefts);
-					haar_right.detectMultiScale(imgCopy, rights);
-					haar_pair.detectMultiScale(imgCopy, pairs);
-
-					int usePair;
-					// loop through each pair
-					
-					if (int(pairs.size() != 0)) {
-						eyePairsFound = int(pairs.size());
-						for (int k = 0; k < pairs.size(); k++) {
-							int useLeft;
-							int useRight;
-							int small_left_diff = numeric_limits<int>::max();
-							int small_right_diff = numeric_limits<int>::max();
-							Rect pair = pairs[k];
-
-							// find the left eye that matches the closest to the pair
-							if (int(lefts.size() != 0)){
-								for (int i = 0; i < lefts.size(); i++) {
-									Rect left = lefts[i];
-									int lxdiff;
-									int lydiff;
-									int ldiff;
-			
-									// find how close the left eye is to the left corner of the pair
-									if(left.x > pair.x) {
-										lxdiff = left.x - pair.x;
-									}
-									else {
-										lxdiff = pair.x - left.x;
-									}
-			
-									if(left.y > pair.y) {
-										lydiff = left.y - pair.y;
-									}
-									else {
-										lydiff = pair.y - left.y;
-									}
-			
-									// find the total number of pixels away it is
-									ldiff = lxdiff + lydiff;
-			
-									if(small_left_diff > ldiff) {
-										small_left_diff = ldiff;
-										useLeft = i;
-									}
-			
-								}
-							}
-
-							leftNumber = useLeft;
-
-							// find the right eye that matches the closest to the pair
-							if (int(rights.size()) != 0) {
-								for (int j = 0; j < rights.size(); j++) {
-									Rect right = rights[j];
-									int rxdiff;
-									int rydiff;
-									int rdiff;
-									
-									// display findings
-									// cout << "right: "<< right << endl;
-			
-									// find how close the right eye is to the right corner of the pair
-									if((right.x+right.width) > (pair.x+pair.width)) {
-										rxdiff = (right.x+right.width) - (pair.x+pair.width);
-									}
-									else {
-										rxdiff = (pair.x+pair.width) - (right.x+right.width);
-									}
-			
-									if(right.y > pair.y) {
-										rydiff = right.y - pair.y;
-									}
-									else {
-										rydiff = pair.y - right.y;
-									}
-			
-									// find the total number of pixels away it is
-									rdiff = rxdiff + rydiff;
-			
-									if(small_right_diff > rdiff) {
-										small_right_diff = rdiff;
-										useRight = j;
-									}
-			
-								}	
-							}
-
-							rightNumber = useRight;
-							// some check to see if this is the closest match $$$
-							pairNumber = k;	
-						}
-					}
-
-					// only run the output / display code if something can be displayed
-					if (eyePairsFound) {
-
-						// save the pair we are using
-						Rect usedPair = pairs[pairNumber];
-						// create ints for the data we have a potential to pass
-						int left_eye_x_pt, left_eye_y_pt, right_eye_x_pt, right_eye_y_pt;
-						// create rectangle objects for drawing if needed
-						Rect usedLeft, usedRight;
-
-						// if a left eye was found
-						if (leftNumber != maxint) {
-							pointCount++;
-							// get the rectangle we are using
-							usedLeft = lefts[leftNumber];
-							// calcualte the x and y coordinates
-							left_eye_x_pt = usedLeft.x + (usedLeft.width/2);
-							left_eye_y_pt = usedLeft.y + (usedLeft.height/2);
-						}
-						if (rightNumber != maxint) {
-							pointCount++;
-							usedRight = rights[rightNumber];
-							right_eye_x_pt = (usedRight.x) + (usedRight.width/2);
-							right_eye_y_pt = usedRight.y + (usedRight.height/2);
-						}
-
-						// display the image to the screen
-						if (showImage) {
-							// draw the pair of eyes finding 
-							rectangle(imgCopy, usedPair, CV_RGB(0, 255, 0), 1);
-
-							// if a left eye match was found
-							if (leftNumber != maxint) {
-								// draw the eye match
-								rectangle(imgCopy, usedLeft, CV_RGB(0, 255, 0), 1);
-								// create a point telling where the circle is going to go
-								Point lefteye = Point(left_eye_x_pt, left_eye_y_pt);
-								// draw the circle
-								circle(imgCopy, lefteye, 10, Scalar(0, 0, 255), -1, 8);
-
-							}
-							if (rightNumber != maxint) {
-								rectangle(imgCopy, usedRight, CV_RGB(0, 255, 0), 1);
-								Point righteye = Point(right_eye_x_pt, right_eye_y_pt);
-								circle(imgCopy, righteye, 10, Scalar(0, 0, 255), -1, 8);
-								
-							}
-
-
-							while(true) {
-								// show the window with drawings
-								imshow(argv[0], imgCopy);
-								// hold the window open until you hit escape
-								char key = (char) waitKey(20);
-								if(key == 27)
-									break;
-							}
-
-
-
-
-						}
-						// used to convert to string
-						
-
-
-						// Put the string together one bit at a time
-						string strPoint;
-
-						
-
-						// if the left eye is found
-						if (leftNumber != maxint) {
-							// add the number to the convert object
-							convert << left_eye_x_pt;
-							// convert it to a string
-							strPoint = convert.str();
-							// append it to the output string
-							outputString += strPoint + "\t";
-							// cear the convert object of the number we just used
-							convert.str("");
-							convert.clear();
-
-							convert << left_eye_y_pt;
-							strPoint = convert.str();
-							//outputString += strPoint + "\tLeft Eye\n";
-							outputString += strPoint + "\t";
-							convert.str("");
-							convert.clear();
-						}
-
-						if (rightNumber != maxint) {
-							convert << right_eye_x_pt;
-							strPoint = convert.str();
-							outputString += strPoint + "\t";
-							convert.str("");
-							convert.clear();
-
-							convert << right_eye_y_pt;
-							strPoint = convert.str();
-							//outputString += strPoint + "\tRight Eye\n";
-							outputString += strPoint + "\n";
-							convert.str("");
-							convert.clear();
-						}
-
-
-						// write the point information out to a file
-					outputFile.open(outputPath);
-					outputFile << outputString << endl << flush;
-					outputFile.close();
-
-					}
-					else {
-						//cout << "No eye pairs could be found." << endl;
-						outputString += "0\t0\t0\t0\n";
-					}
-				}
-				else {
-					//cout << "Error: Image does not exsist" << endl;
-					outputString += "0\t0\t0\t0\n";
-				}
-			}
-			else {
-				cout << "Error: No file was passed\n\tPlease insure to pass the data as described below" << endl;
-				help();
-				exit(1);
+/**
+ * main - where the application launches at startup
+ * @param  argc the total number of arguments
+ * @param  argv each argument passed in as a string
+ * @return      0 on successful completion
+ */
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+int _tmain(int argc, _TCHAR* argv[]) 
+#else
+int main(int argc, char const *argv[]) 
+#endif
+{
+	strcpy(outputPathChar, tempPath);
+	strcat(outputPathChar, fileName);
+	
+	bool hasCorrectInput = parseParameters(argc, argv);
+	
+	if (hasCorrectInput) {
+		if (!multiImage) {
+			// use the second perameter as the file if nothing else was provided
+			if(!imgFound && argc == 2) {
+				imgFound++;
+				imgPath = argv[1];
 			}
 		}
-		string strNumberOfPoints;
-		string finalString;
-		convert << pointCount;
-		strNumberOfPoints = convert.str();
-		convert.str("");
-		convert.clear();
-
-		// outputString += strNumberOfPoints + "\n";
-		//finalString = strNumberOfPoints + "\n" + outputString + ":ok";
-		finalString = outputString + ":ok";
-						cout << finalString << endl;
-						outputFile.open(outputPath);
-						outputFile << finalString;
-						outputFile.close();
+		findEyeCenters(argc, argv);
 	}
-
-
 
 	return 0;
 }
