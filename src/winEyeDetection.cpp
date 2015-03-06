@@ -166,6 +166,8 @@ bool parseParameters(int argc, _TCHAR *argv[]) {
 
 void findEyeCenters(int argc, _TCHAR *argv[]) {
 
+	cout << outputPathChar << endl << outputPath << endl;
+
 	// we need to know what perameters we are going to use as input
 	int from;
 	int to;
@@ -439,7 +441,7 @@ void findEyeCenters(int argc, _TCHAR *argv[]) {
 	// finalString = ":ok";
 
 	cout << endl << "Output data:\n--------------\n" << finalString << endl << endl;
-	cout << "Outputing data to file: " << &outputPath << endl << outputPath.c_str() << endl;
+	cout << "Outputing data to file: " << outputPathChar << endl << outputPath << endl << outputPath.c_str() << endl;
 	outputFile.open(outputPath.c_str());
 	outputFile << finalString;
 	outputFile.close();
@@ -460,6 +462,8 @@ int main(int argc, char const *argv[])
 {
 	strcpy(outputPathChar, tempPath);
 	strcat(outputPathChar, fileName);
+
+	outputPath = string(outputPathChar);
 	
 	bool hasCorrectInput = parseParameters(argc, argv);
 	
