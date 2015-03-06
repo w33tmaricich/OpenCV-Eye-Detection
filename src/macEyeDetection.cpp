@@ -148,7 +148,7 @@ bool exists (const std::string& name) {
  * @return            bool on correct termination.
  */
 bool parseParameters(int argc, char const *argv[]) {
-	// loop through the input to see what needs to be done
+		// loop through the input to see what needs to be done
 	for (int i = 1; i < argc; i++) {
 		if (strcmp(argv[1], "--help") == 0) {
 			help();
@@ -164,14 +164,14 @@ bool parseParameters(int argc, char const *argv[]) {
 		}
 		else if (strcmp(argv[i], "--file") == 0 || strcmp(argv[i], "-f") == 0) {
 			imgPath = argv[i+1];
-			imgFound++;
+			imgFound = i + 1;
 			flagsFound++;
-			//cout << "Passing one file: imgPath=" << imgPath << " imgFound=" << imgFound << endl;
+			cout << "Passing one file: imgPath=" << imgPath << " imgFound=" << imgFound << endl;
 		}
 		else if (strcmp(argv[i], "--output") == 0 || strcmp(argv[i], "-o") == 0) {
 			outputPath = argv[i+1];
 			flagsFound++;
-			//cout << "Changing output file: outputPath=" << outputPath << endl;
+			cout << "Changing output file: outputPath=" << outputPath << endl;
 		}
 		else if (strcmp(argv[i], "--multi-image") == 0) {
 			multiImage = i+1;
@@ -183,17 +183,33 @@ bool parseParameters(int argc, char const *argv[]) {
 
 void findEyeCenters(int argc, char const *argv[]) {
 
-	// if there is only one image being passed in, we only want to run the loop once
+// we need to know what perameters we are going to use as input
+	int from;
+	int to;
+
+	// if there is only one perameter passed into the program (an image)
 	if (multiImage == 0 && argc == 2) {
-		multiImage = 1;
+		from = 1;
+		to = 2;
+		cout << "Processing single image: \n--------------" << endl;
+	// if the --file flag was used, use the image specified
+	} else if (imgFound) {
+		from = imgFound;
+		to = from + 1;
+		cout << "Processing  " << to - from << " images: \n--------------" << endl;
+	// if the --multi-image flag was used, loop from the flag to the end of the perameters list
+	} else if (multiImage) {
+		from = multiImage;
+		to = argc;
+		cout << "Processing  " << to - from << " images: \n--------------" << endl;
 	}
 
 	int processedCounter = 0;
-	cout << "Processing  " << argc - multiImage << " images: \n--------------" << endl;
-	for (int l = multiImage; l < argc; l++) {
+	
+	for (int l = from; l < to; l++) {
 		processedCounter++;
 
-		if (imgFound || multiImage != 0) {
+		if (true) {
 			imgPath = argv[l];
 			cout << "[" << processedCounter << "] Processing image at path: " << imgPath << endl;
 			// check to see if the image exsists

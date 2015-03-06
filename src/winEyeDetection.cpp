@@ -5,7 +5,10 @@
 //
 //
 //
-//Output file issues $$$
+//int _tmain(int argc, _TCHAR* argv[])
+//{
+//	return 0;
+//}
 //
 
 /*
@@ -144,14 +147,14 @@ bool parseParameters(int argc, _TCHAR *argv[]) {
 		}
 		else if (strcmp(argv[i], "--file") == 0 || strcmp(argv[i], "-f") == 0) {
 			imgPath = argv[i+1];
-			imgFound++;
+			imgFound = i + 1;
 			flagsFound++;
-			//cout << "Passing one file: imgPath=" << imgPath << " imgFound=" << imgFound << endl;
+			cout << "Passing one file: imgPath=" << imgPath << " imgFound=" << imgFound << endl;
 		}
 		else if (strcmp(argv[i], "--output") == 0 || strcmp(argv[i], "-o") == 0) {
 			outputPath = argv[i+1];
 			flagsFound++;
-			//cout << "Changing output file: outputPath=" << outputPath << endl;
+			cout << "Changing output file: outputPath=" << outputPath << endl;
 		}
 		else if (strcmp(argv[i], "--multi-image") == 0) {
 			multiImage = i+1;
@@ -163,22 +166,38 @@ bool parseParameters(int argc, _TCHAR *argv[]) {
 
 void findEyeCenters(int argc, _TCHAR *argv[]) {
 
-	// if there is only one image being passed in, we only want to run the loop once
+	// we need to know what perameters we are going to use as input
+	int from;
+	int to;
+
+	// if there is only one perameter passed into the program (an image)
 	if (multiImage == 0 && argc == 2) {
-		multiImage = 1;
+		from = 1;
+		to = 2;
+		cout << "Processing single image: \n--------------" << endl;
+	// if the --file flag was used, use the image specified
+	} else if (imgFound) {
+		from = imgFound;
+		to = from + 1;
+		cout << "Processing  " << to - from << " images: \n--------------" << endl;
+	// if the --multi-image flag was used, loop from the flag to the end of the perameters list
+	} else if (multiImage) {
+		from = multiImage;
+		to = argc;
+		cout << "Processing  " << to - from << " images: \n--------------" << endl;
 	}
 
 	int processedCounter = 0;
-	cout << "Processing  " << argc - multiImage << " images: \n--------------" << endl;
-	for (int l = multiImage; l < argc; l++) {
+	
+	for (int l = from; l < to; l++) {
 		processedCounter++;
 
-		if (imgFound || multiImage != 0) {
+		if (true) {
 			imgPath = argv[l];
 			cout << "[" << processedCounter << "] Processing image at path: " << imgPath << endl;
 			// check to see if the image exsists
 			fileExists = (ifstream(imgPath.c_str()) != 0);
-			cout << "file exists" << endl;
+			//cout << "file exists" << endl;
 
 
 			if (fileExists) {
@@ -193,14 +212,14 @@ void findEyeCenters(int argc, _TCHAR *argv[]) {
 				haar_right.load(xmlRight);
 				haar_pair.load(xmlPairSmall);
 
-				cout << "loaded information" << endl;
+				//cout << "loaded information" << endl;
 				haar_left.detectMultiScale(imgCopy, lefts);
 				haar_right.detectMultiScale(imgCopy, rights);
 				haar_pair.detectMultiScale(imgCopy, pairs);
 
 				// loop through each pair
 
-				cout << "Performed Haar Cascade" << endl;
+				//cout << "Performed Haar Cascade" << endl;
 				
 				if (int(pairs.size() != 0)) {
 					eyePairsFound = int(pairs.size());
@@ -286,7 +305,7 @@ void findEyeCenters(int argc, _TCHAR *argv[]) {
 						pairNumber = k;	
 					}
 				}
-				cout << "Found eye pairs" << endl;
+				//cout << "Found eye pairs" << endl;
 				// only run the output / display code if something can be displayed
 				if (eyePairsFound) {
 					// save the pair we are using
@@ -385,11 +404,11 @@ void findEyeCenters(int argc, _TCHAR *argv[]) {
 						convert.str("");
 						convert.clear();
 					}
-					cout << "Found data, time to store" << endl;
+					//cout << "Found data, time to store" << endl;
 					outputFile.open(outputPath.c_str());
 					outputFile << outputString;
 					outputFile.close();
-					cout << "Stored one data" << endl;
+					//cout << "Stored one data" << endl;
 				}
 				else {
 					outputString += "0\t0\t0\t0\n";
@@ -406,7 +425,7 @@ void findEyeCenters(int argc, _TCHAR *argv[]) {
 		}
 	
 	}
-	cout << "Get ready to store final data" << endl;
+	//cout << "Get ready to store final data" << endl;
 	// string strNumberOfPoints;
 	string finalString;
 	// convert << pointCount/2;
@@ -420,11 +439,11 @@ void findEyeCenters(int argc, _TCHAR *argv[]) {
 	// finalString = ":ok";
 
 	cout << endl << "Output data:\n--------------\n" << finalString << endl << endl;
-	cout << "Outputing data to file: ";
+	cout << "Outputing data to file: " << &outputPath << endl << outputPath.c_str() << endl;
 	outputFile.open(outputPath.c_str());
 	outputFile << finalString;
 	outputFile.close();
-	cout << "Complete." << endl;
+	cout << "...done." << endl;
 }
 
 /**
