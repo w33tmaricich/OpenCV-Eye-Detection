@@ -472,6 +472,8 @@ int main(int argc, char const *argv[])
 {
 	strcpy(outputPathChar, tempPath);
 	strcat(outputPathChar, fileName);
+
+	outputPath = string(outputPathChar);
 	
 	bool hasCorrectInput = parseParameters(argc, argv);
 	
