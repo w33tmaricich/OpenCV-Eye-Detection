@@ -166,8 +166,6 @@ bool parseParameters(int argc, _TCHAR *argv[]) {
 
 void findEyeCenters(int argc, _TCHAR *argv[]) {
 
-	cout << outputPathChar << endl << outputPath << endl;
-
 	// we need to know what perameters we are going to use as input
 	int from;
 	int to;
@@ -214,17 +212,14 @@ void findEyeCenters(int argc, _TCHAR *argv[]) {
 				haar_right.load(xmlRight);
 				haar_pair.load(xmlPairSmall);
 
-				//cout << "loaded information" << endl;
 				haar_left.detectMultiScale(imgCopy, lefts);
 				haar_right.detectMultiScale(imgCopy, rights);
 				haar_pair.detectMultiScale(imgCopy, pairs);
 
 				// loop through each pair
-
-				//cout << "Performed Haar Cascade" << endl;
+				eyePairsFound = int(pairs.size());
 				
-				if (int(pairs.size() != 0)) {
-					eyePairsFound = int(pairs.size());
+				if (eyePairsFound != 0) {
 
 					for (unsigned int k = 0; k < pairs.size(); k++) {
 						int useLeft = -1;
@@ -442,7 +437,6 @@ void findEyeCenters(int argc, _TCHAR *argv[]) {
 
 	cout << endl << "Output data:\n--------------\n" << finalString << endl << endl;
 	cout << "Outputing data to file: " << outputPathChar << endl << outputPath << endl << outputPath.c_str() << endl;
-	outputFile.open(outputPath.c_str());
 	outputFile << finalString;
 	outputFile.close();
 	cout << "...done." << endl;
