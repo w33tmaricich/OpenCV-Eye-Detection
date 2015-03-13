@@ -432,11 +432,12 @@ void findEyeCenters(int argc, _TCHAR *argv[]) {
 
 	// outputString += strNumberOfPoints + "\n";
 	// finalString = strNumberOfPoints + "\n" + outputString + ":ok";
-	finalString = outputString + ":ok";
+	finalString = outputString + "\:ok";
 	// finalString = ":ok";
 
 	cout << endl << "Output data:\n--------------\n" << finalString << endl << endl;
-	cout << "Outputing data to file: " << outputPathChar << endl << outputPath << endl << outputPath.c_str() << endl;
+	//cout << "Outputing data to file: " << outputPathChar << endl << outputPath << endl << outputPath.c_str() << endl;
+	outputFile.open(outputPath.c_str());
 	outputFile << finalString;
 	outputFile.close();
 	cout << "...done." << endl;
